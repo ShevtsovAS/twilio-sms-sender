@@ -10,12 +10,20 @@
     </parent>
     <groupId>com.example.ashevtsov</groupId>
     <artifactId>twilio-sms-sender</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.2-SNAPSHOT</version>
     <name>twilio-sms-sender</name>
     <description>Demo how to send sms's with twilio service</description>
 
     <properties>
         <java.version>1.8</java.version>
+        <!--suppress UnresolvedMavenProperty -->
+        <docker.image.prefix>${env.DOCKER_USER}</docker.image.prefix>
+        <!--suppress UnresolvedMavenProperty -->
+        <twilio.account.sid>${env.TWILIO_ACCOUNT_SID}</twilio.account.sid>
+        <!--suppress UnresolvedMavenProperty -->
+        <twilio.auth.token>${env.TWILIO_AUTH_TOKEN}</twilio.auth.token>
+        <!--suppress UnresolvedMavenProperty -->
+        <twilio.phone.number.from>${env.TWILIO_PHONE_NUMBER_FROM}</twilio.phone.number.from>
     </properties>
 
     <dependencies>
@@ -51,6 +59,61 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>io.fabric8</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
+                <version>0.31.0</version>
+                <configuration>
+                    <verbose>true</verbose>
+                    <images>
+                        <image>
+                            <alias>twilio-sms-sender</alias>
+                            <name>${docker.image.prefix}/${project.artifactId}</name>
+
+                            <build>
+                                <dockerFileDir>${project.basedir}</dockerFileDir>
+                                <args>
+                                    <JAR_FILE>target/${project.build.finalName}.${project.packaging}</JAR_FILE>
+                                </args>
+                                <tags>
+                                    <tag>${project.version}</tag>
+                                    <tag>latest</tag>
+                                </tags>
+                            </build>
+
+                            <run>
+                                <ports>
+                                    <port>8080:8080</port>
+                                </ports>
+                                <env>
+                                    <TWILIO_ACCOUNT_SID>${twilio.account.sid}</TWILIO_ACCOUNT_SID>
+                                    <TWILIO_AUTH_TOKEN>${twilio.auth.token}</TWILIO_AUTH_TOKEN>
+                                    <TWILIO_PHONE_NUMBER_FROM>${twilio.phone.number.from}</TWILIO_PHONE_NUMBER_FROM>
+                                </env>
+                                <restartPolicy>
+                                    <name>always</name>
+                                </restartPolicy>
+                            </run>
+                        </image>
+                    </images>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>build</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>push</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>push</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
